@@ -1,0 +1,11 @@
+{
+  "name": "merkle_proof",
+  "version": "1.0.0",
+  "main": "snarkmerkle.js",
+  "license": "MIT",
+  "dependencies": {
+    "merkle-tree-solidity": "^1.0.8",
+    "merkletreejs": "^0.2.27",
+    "starknet": "^2.5.0"
+  }
+}
