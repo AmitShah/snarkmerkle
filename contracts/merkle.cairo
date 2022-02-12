@@ -43,6 +43,16 @@ from starkware.cairo.common.hash import hash2
 from starkware.cairo.common.math import assert_nn_le,unsigned_div_rem,assert_lt,assert_nn
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_xor
 from starkware.cairo.common.math_cmp import is_nn,is_le
+from starkware.cairo.common.hash import hash2
+from starkware.cairo.common.signature import (
+    verify_ecdsa_signature)
+from starkware.starknet.common.syscalls import get_tx_signature
+from starkware.starknet.common.syscalls import get_caller_address
+
+@storage_var
+func Ownable_owner() -> (owner: felt):
+end
+
 # Fills `new_array` with the squares of the first `length` elements in `array`.
 func _inner_sqr_array(array : felt*, new_array : felt*, length : felt):
     if length == 0:
@@ -170,7 +180,44 @@ func checkProofOrdered{range_check_ptr, bitwise_ptr : BitwiseBuiltin*, pedersen_
   #return()
 end
 
-func main{pedersen_ptr : HashBuiltin*,range_check_ptr,bitwise_ptr : BitwiseBuiltin* }():
+
+
+@external
+func claimXp{pedersen_ptr : HashBuiltin*,range_check_ptr,bitwise_ptr : BitwiseBuiltin*,ecdsa_ptr : SignatureBuiltin* }(root: felt,sig : (felt, felt), proof_len:felt, proof:felt *, element:felt, index:felt)->(res: felt){
+   //let (amount_hash) = hash2{hash_ptr=pedersen_ptr}( 0,root)
+   //get owner from smartcontract storage
+  let (owner) = Ownable_owner.read()
+  verify_ecdsa_signature(
+        message=root,
+        public_key=owner,
+        signature_r=sig[0],
+        signature_s=sig[1])
+  return (owner)
+
+}
+
+func Ownable_initializer{
+        syscall_ptr : felt*, 
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }(owner: felt):
+    Ownable_owner.write(owner)
+    return ()
+end
+
+@constructor
+func constructor{
+        syscall_ptr : felt*, 
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }():
+    let address = get_caller_address()
+    Ownable_initializer(address)
+    return ()
+end
+
+@view
+func checkProof{pedersen_ptr : HashBuiltin*,range_check_ptr,bitwise_ptr : BitwiseBuiltin* }()->(res: felt):
     alloc_locals
     # Allocate a new array.
     let (local array) = alloc()
@@ -203,6 +250,6 @@ func main{pedersen_ptr : HashBuiltin*,range_check_ptr,bitwise_ptr : BitwiseBuilt
     let (ftp) = fast_two_pow(2,24)
     #let(ftp) = two_pow(24)
     #serialize_word(ftp)
-    return ()
+    return (result2)
 end
 
